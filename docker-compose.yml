@@ -19,5 +19,33 @@ services:
       retries: 20
       start_period: 30s
 
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: dpb-app
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@db:3306/${MYSQL_DATABASE}
+      APP_URL: ${APP_URL}
+      AUTH_SECRET: ${AUTH_SECRET}
+      DISPLAY_TOKEN_SECRET: ${DISPLAY_TOKEN_SECRET}
+      SESSION_MAX_AGE: ${SESSION_MAX_AGE}
+      SEED_OWNER_PASSWORD: ${SEED_OWNER_PASSWORD}
+      SEED_DISPLAY_TOKEN: ${SEED_DISPLAY_TOKEN}
+      SEED: ${SEED:-0}
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/login"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
 volumes:
   mysql_data:

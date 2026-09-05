@@ -1,4 +1,5 @@
 import "dotenv/config";
+import { createHmac } from "node:crypto";
 import { PrismaClient } from "../generated/prisma/client";
 import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 import bcrypt from "bcryptjs";
@@ -7,6 +8,12 @@ const adapter = new PrismaMariaDb(
   process.env.DATABASE_URL!.replace(/^mysql:\/\//, "mariadb://")
 );
 const prisma = new PrismaClient({ adapter });
+
+function hashDisplayToken(raw: string): string {
+  const secret = process.env.DISPLAY_TOKEN_SECRET;
+  if (!secret) throw new Error("DISPLAY_TOKEN_SECRET tidak diset.");
+  return createHmac("sha256", secret).update(raw).digest("hex");
+}
 
 async function main() {
   const ownerPassword = process.env.SEED_OWNER_PASSWORD ?? "owner123";
@@ -77,7 +84,20 @@ async function main() {
     }
   }
 
+  const displayRawToken = process.env.SEED_DISPLAY_TOKEN ?? "dev-display-token";
+  await prisma.displayDevice.upsert({
+    where: { displayToken: hashDisplayToken(displayRawToken) },
+    update: { name: "Monitor Kasir", isActive: true },
+    create: {
+      name: "Monitor Kasir",
+      displayToken: hashDisplayToken(displayRawToken),
+      isActive: true,
+    },
+  });
+
   console.log("Seed selesai. Owner:", owner.email);
+  console.log("Display device token:", displayRawToken);
+  console.log(`Display URL: /display/${displayRawToken}`);
 }
 
 main()

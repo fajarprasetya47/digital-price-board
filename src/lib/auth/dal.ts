@@ -1,6 +1,7 @@
 import "server-only";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db/prisma";
+import { unauthorized } from "@/lib/errors/api-error";
 import { decryptSession, getSessionCookie } from "./session";
 
 export type CurrentUser = {
@@ -27,5 +28,11 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
 export async function requireUser(): Promise<CurrentUser> {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
+  return user;
+}
+
+export async function requireApiUser(): Promise<CurrentUser> {
+  const user = await getCurrentUser();
+  if (!user) throw unauthorized();
   return user;
 }

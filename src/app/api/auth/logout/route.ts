@@ -1,5 +1,8 @@
-import { notImplemented } from "@/lib/utils/api";
+import { withErrorHandling } from "@/lib/errors/handler";
+import { deleteSession } from "@/lib/auth/session";
+import { ok } from "@/lib/utils/api";
 
-export async function POST() {
-  return notImplemented("Endpoint belum tersedia (fase Backend).");
-}
+export const POST = withErrorHandling(async () => {
+  await deleteSession();
+  return ok({ success: true });
+});

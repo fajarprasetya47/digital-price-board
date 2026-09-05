@@ -1,9 +1,93 @@
-import { notImplemented } from "@/lib/utils/api";
+import { withErrorHandling } from "@/lib/errors/handler";
+import { notFound, validationError } from "@/lib/errors/api-error";
+import { requireApiUser } from "@/lib/auth/dal";
+import { prisma } from "@/lib/db/prisma";
+import { readJson, ok } from "@/lib/utils/api";
+import { parseOrThrow } from "@/lib/validation";
+import { categoryUpdateSchema } from "@/lib/validation/category";
 
-export async function GET() {
-  return notImplemented("Detail kategori belum tersedia (fase Backend).");
+export async function getCategoryId(
+  params: Promise<{ id: string }>
+): Promise<number> {
+  const { id } = await params;
+  const parsed = Number(id);
+  if (!Number.isInteger(parsed) || parsed <= 0) {
+    throw notFound("Kategori tidak ditemukan.");
+  }
+  return parsed;
 }
 
-export async function PATCH() {
-  return notImplemented("Ubah kategori belum tersedia (fase Backend).");
-}
+export const GET = withErrorHandling(async (_request: Request, ctx: RouteContext<"/api/categories/[id]">) => {
+  await requireApiUser();
+
+  const id = await getCategoryId(ctx.params);
+  const category = await prisma.category.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      name: true,
+      isActive: true,
+      displayOrder: true,
+      createdAt: true,
+      updatedAt: true,
+      _count: { select: { products: true } },
+    },
+  });
+
+  if (!category) {
+    throw notFound("Kategori tidak ditemukan.");
+  }
+
+  return ok({
+    category: {
+      id: category.id,
+      name: category.name,
+      isActive: category.isActive,
+      displayOrder: category.displayOrder,
+      productCount: category._count.products,
+    },
+  });
+});
+
+export const PATCH = withErrorHandling(async (request: Request, ctx: RouteContext<"/api/categories/[id]">) => {
+  await requireApiUser();
+
+  const id = await getCategoryId(ctx.params);
+  const exists = await prisma.category.findUnique({
+    where: { id },
+    select: { id: true },
+  });
+  if (!exists) {
+    throw notFound("Kategori tidak ditemukan.");
+  }
+
+  const body = await readJson(request);
+  const data = parseOrThrow(categoryUpdateSchema, body);
+
+  if (data.name !== undefined) {
+    const duplicate = await prisma.category.findFirst({
+      where: { name: data.name, id: { not: id } },
+    });
+    if (duplicate) {
+      throw validationError("Nama kategori sudah digunakan.");
+    }
+  }
+
+  const category = await prisma.category.update({
+    where: { id },
+    data: {
+      name: data.name,
+      isActive: data.isActive,
+      displayOrder: data.displayOrder,
+    },
+  });
+
+  return ok({
+    category: {
+      id: category.id,
+      name: category.name,
+      isActive: category.isActive,
+      displayOrder: category.displayOrder,
+    },
+  });
+});

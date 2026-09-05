@@ -1,0 +1,81 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+enum Role {
+  OWNER
+}
+
+model User {
+  id             Int             @id @default(autoincrement())
+  name           String
+  email          String          @unique
+  passwordHash   String          @map("password_hash")
+  role           Role            @default(OWNER)
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
+  priceHistories PriceHistory[]
+
+  @@map("users")
+}
+
+model Category {
+  id           Int       @id @default(autoincrement())
+  name         String    @unique
+  isActive     Boolean   @default(true) @map("is_active")
+  displayOrder Int       @default(0) @map("display_order")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  products     Product[]
+
+  @@index([isActive, displayOrder])
+  @@map("categories")
+}
+
+model Product {
+  id             Int             @id @default(autoincrement())
+  categoryId     Int             @map("category_id")
+  name           String
+  sellingPrice   Int             @map("selling_price")
+  isActive       Boolean         @default(true) @map("is_active")
+  displayOrder   Int             @default(0) @map("display_order")
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
+  category       Category        @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  priceHistories PriceHistory[]
+
+  @@index([categoryId, isActive, displayOrder])
+  @@index([name])
+  @@map("products")
+}
+
+model PriceHistory {
+  id        Int      @id @default(autoincrement())
+  productId Int      @map("product_id")
+  oldPrice  Int      @map("old_price")
+  newPrice  Int      @map("new_price")
+  changedBy Int      @map("changed_by")
+  createdAt DateTime @default(now()) @map("created_at")
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [changedBy], references: [id], onDelete: Restrict)
+
+  @@index([productId, createdAt])
+  @@map("price_histories")
+}
+
+model DisplayDevice {
+  id           Int       @id @default(autoincrement())
+  name         String
+  displayToken String    @unique @map("display_token")
+  isActive     Boolean   @default(true) @map("is_active")
+  lastSeenAt   DateTime? @map("last_seen_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  @@map("display_devices")
+}

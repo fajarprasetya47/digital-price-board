@@ -1,5 +1,6 @@
 import { getCurrentUser } from "@/lib/auth/dal";
 import { NavLink } from "@/components/shell/nav-link";
+import { LogoutButton } from "@/components/shell/logout-button";
 
 export default async function DashboardLayout({
   children,
@@ -30,6 +31,7 @@ export default async function DashboardLayout({
             <span className="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">
               Owner
             </span>
+            <LogoutButton />
           </div>
         </div>
       </header>

@@ -166,7 +166,7 @@ docker compose logs -f app
 | `MYSQL_USER` / `MYSQL_PASSWORD` | ✓ (compose) | User aplikasi DB |
 | `MYSQL_PORT` | – | Port host MySQL (default `3307`) |
 | `DATABASE_URL` | ✓ | Koneksi Prisma (dipakai saat run di host / migrate) |
-| `APP_URL` | ✓ | URL publik; dipakai membangun `displayUrl` saat daftarkan perangkat display |
+| `APP_URL` | ✓ | URL publik; dipakai membangun `displayUrl` saat daftarkan perangkat display. Skema `https://` mengaktifkan atribut `Secure` pada cookie sesi; `http://` untuk dev/akses LAN lokal |
 | `AUTH_SECRET` | ✓ | Secret sign JWT sesi owner |
 | `DISPLAY_TOKEN_SECRET` | ✓ | Secret HMAC token display |
 | `SESSION_MAX_AGE` | ✓ | Durasi sesi owner dalam detik (tidak di-hardcode) |
@@ -226,7 +226,7 @@ Revoke: nonaktifkan perangkat di menu Display; token tidak akan lagi diterima (H
 ## Keamanan
 
 - Password di-hash (bcrypt), tidak pernah dikirim ke client
-- Sesi owner: JWT httpOnly cookie + masa berlaku dari env
+- Sesi owner: JWT httpOnly cookie + masa berlaku dari env (atribut `Secure` otomatis aktif bila `APP_URL` ber-skema `https://`)
 - Token display disimpan sebagai HMAC-SHA256 (token mentah tidak tersimpan di DB)
 - Seluruh input divalidasi di sisi server (Zod); API menolak request yang tidak sah
 - Secret tidak pernah di-commit; `.env` di luar image Docker

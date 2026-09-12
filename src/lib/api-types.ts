@@ -37,6 +37,9 @@ export type DisplayDeviceDto = {
   id: number;
   name: string;
   isActive: boolean;
+  showAllCategories: boolean;
+  categoryIds: number[];
+  categories: { id: number; name: string }[];
   lastSeenAt: string | null;
   createdAt: string;
 };

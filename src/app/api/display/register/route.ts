@@ -16,14 +16,24 @@ export const POST = withErrorHandling(async (request: Request) => {
 
   const device = await prisma.displayDevice.create({
     data: { name, displayToken: tokenHash, isActive: true },
-    select: { id: true, name: true, isActive: true, createdAt: true },
+    select: {
+      id: true,
+      name: true,
+      isActive: true,
+      showAllCategories: true,
+      createdAt: true,
+      categories: { select: { id: true, name: true } },
+    },
   });
 
   const baseUrl = process.env.APP_URL ?? "";
   const displayUrl = `${baseUrl}/display/${raw}`;
 
   return created({
-    device,
+    device: {
+      ...device,
+      categoryIds: device.categories.map((c) => c.id),
+    },
     token: raw,
     displayUrl,
   });

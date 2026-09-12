@@ -12,10 +12,17 @@ type DisplayCategory = {
 };
 
 export const GET = withErrorHandling(async (request: Request) => {
-  await authenticateDisplay(request);
+  const device = await authenticateDisplay(request);
+
+  // Filtering kategori dilakukan di server (System Plan V2 §14-15).
+  // Response structure tidak berubah: DisplayScreen tidak perlu tahu
+  // apakah data berasal dari mode "all categories" atau "selected".
+  const categoryFilter = device.showAllCategories
+    ? { isActive: true }
+    : { isActive: true, id: { in: device.categoryIds } };
 
   const products = await prisma.product.findMany({
-    where: { isActive: true, category: { isActive: true } },
+    where: { isActive: true, category: categoryFilter },
     orderBy: [
       { category: { displayOrder: "asc" } },
       { category: { name: "asc" } },

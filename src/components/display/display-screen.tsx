@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { fetchJSON, ApiClientError } from "@/lib/client/api";
-import { formatCurrency } from "@/lib/utils/format";
 import type { DisplayPricesDto } from "@/lib/api-types";
+import type { DisplayMode } from "@/app/(display)/display/[token]/page";
+import { CategorySection, PagedGrid } from "./paged-grid";
 
 const POLL_INTERVAL_MS = 60_000;
 const STALE_AFTER_MS = 5 * 60_000;
@@ -42,7 +43,15 @@ function timeAgo(date: Date, now: number): string {
   return `${hours} jam lalu`;
 }
 
-export function DisplayScreen({ token }: { token: string }) {
+export function DisplayScreen({
+  token,
+  mode,
+  rotateSeconds,
+}: {
+  token: string;
+  mode: DisplayMode;
+  rotateSeconds: number;
+}) {
   const [data, setData] = useState<DisplayPricesDto | null>(null);
   const [status, setStatus] = useState<Status>("syncing");
   const [lastSyncAt, setLastSyncAt] = useState<Date | null>(null);
@@ -51,6 +60,12 @@ export function DisplayScreen({ token }: { token: string }) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [now, setNow] = useState(0);
+  const [pageInfo, setPageInfo] = useState({ page: 0, total: 0 });
+
+  // System Plan V2 §29 & §48: hanya "pages" yang diimplementasikan.
+  // Mode lain (mis. future "scroller") untuk saat ini dirender dengan
+  // strategi pages agar display tetap berfungsi.
+  const usePagedLayout = mode === "pages" || mode === "scroller";
 
   const tokenRef = useRef(token);
   const dataRef = useRef<DisplayPricesDto | null>(null);
@@ -133,12 +148,17 @@ export function DisplayScreen({ token }: { token: string }) {
     }
   }
 
+  const handlePageChange = useCallback((page: number, total: number) => {
+    setPageInfo({ page, total });
+  }, []);
+
   const filtered = filterCategories(data, search);
+  const searchActive = search.trim() !== "";
 
   const stale = lastSyncAt ? now - lastSyncAt.getTime() > STALE_AFTER_MS : false;
 
   return (
-    <div className="flex min-h-screen flex-col bg-zinc-950 text-zinc-50">
+    <div className="flex h-dvh flex-col bg-zinc-950 text-zinc-50">
       {/* Header */}
       <header className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-800 px-6 py-4">
         <div className="flex items-center gap-3">
@@ -204,30 +224,29 @@ export function DisplayScreen({ token }: { token: string }) {
         <div className="flex flex-1 items-center justify-center p-6">
           <p className="text-2xl text-zinc-600">Belum ada harga.</p>
         </div>
+      ) : !usePagedLayout || searchActive ? (
+        <main className="flex-1 overflow-y-auto px-6 py-8">
+          <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+            {filtered.map((category) => (
+              <CategorySection
+                key={category.id}
+                block={{
+                  categoryId: category.id,
+                  categoryName: category.name,
+                  products: category.products,
+                }}
+              />
+            ))}
+          </div>
+        </main>
       ) : (
-        <main className="grid flex-1 grid-cols-1 gap-8 px-6 py-8 lg:grid-cols-2">
-          {filtered.map((category) => (
-            <section key={category.id}>
-              <h2 className="mb-3 text-xl font-bold uppercase tracking-widest text-amber-400">
-                {category.name}
-              </h2>
-              <div className="overflow-hidden rounded-2xl border border-zinc-800">
-                {category.products.map((product) => (
-                  <div
-                    key={product.id}
-                    className="flex items-center justify-between gap-4 border-b border-zinc-800/70 bg-zinc-900/40 px-5 py-4 last:border-b-0"
-                  >
-                    <span className="min-w-0 truncate text-2xl font-medium text-white sm:text-3xl">
-                      {product.name}
-                    </span>
-                    <span className="shrink-0 text-3xl font-bold text-white sm:text-4xl">
-                      {formatCurrency(product.price)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </section>
-          ))}
+        <main className="flex min-h-0 flex-1 flex-col px-6 py-8">
+          <PagedGrid
+            categories={filtered}
+            rotateSeconds={rotateSeconds}
+            paused={false}
+            onPageChange={handlePageChange}
+          />
         </main>
       )}
 
@@ -239,6 +258,11 @@ export function DisplayScreen({ token }: { token: string }) {
             ? `${formatClock(lastSyncAt.toISOString())} (${timeAgo(lastSyncAt, now)})`
             : "-"}
         </span>
+        {pageInfo.total > 1 && !searchActive && (
+          <span>
+            Halaman {pageInfo.page + 1} / {pageInfo.total}
+          </span>
+        )}
         {isFullscreen && <span>Mode layar penuh aktif</span>}
       </footer>
     </div>

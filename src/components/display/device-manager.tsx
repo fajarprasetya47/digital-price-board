@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { fetchJSON, ApiClientError } from "@/lib/client/api";
 import { formatDateTime } from "@/lib/utils/format";
 import type {
+  CategoryDto,
   DisplayDeviceDto,
   RegisteredDisplayDto,
 } from "@/lib/api-types";
@@ -132,21 +133,165 @@ function TokenResult({
   );
 }
 
+function categorySummary(device: DisplayDeviceDto): string {
+  if (device.showAllCategories) return "Semua kategori";
+  const names = device.categories.map((c) => c.name);
+  if (names.length === 0) return "Tidak ada kategori";
+  if (names.length <= 2) return names.join(", ");
+  return `${names.slice(0, 2).join(", ")} +${names.length - 2} lainnya`;
+}
+
+function CategorySelectionModal({
+  device,
+  categories,
+  onClose,
+  onSaved,
+}: {
+  device: DisplayDeviceDto;
+  categories: CategoryDto[];
+  onClose: () => void;
+  onSaved: (device: DisplayDeviceDto) => void;
+}) {
+  const [mode, setMode] = useState<"all" | "selected">(
+    device.showAllCategories ? "all" : "selected"
+  );
+  const [selected, setSelected] = useState<number[]>(device.categoryIds);
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  function toggleCategory(id: number) {
+    setSelected((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  }
+
+  async function onSubmit() {
+    if (mode === "selected" && selected.length === 0) {
+      setError("Pilih minimal satu kategori.");
+      return;
+    }
+    setError(null);
+    setSaving(true);
+    try {
+      const res = await fetchJSON<{ device: DisplayDeviceDto }>(
+        `/api/display/devices/${device.id}`,
+        {
+          method: "PATCH",
+          body: {
+            showAllCategories: mode === "all",
+            categoryIds: mode === "selected" ? selected : [],
+          },
+        }
+      );
+      onSaved(res.device);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Gagal menyimpan konfigurasi."
+      );
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Modal
+      open
+      onClose={onClose}
+      title="Atur Kategori"
+      footer={
+        <>
+          <Button variant="secondary" type="button" onClick={onClose} disabled={saving}>
+            Batal
+          </Button>
+          <Button type="button" onClick={onSubmit} loading={saving}>
+            Simpan
+          </Button>
+        </>
+      }
+    >
+      <div className="space-y-4">
+        <p className="text-sm text-zinc-600">
+          Tentukan kategori yang ditampilkan oleh{" "}
+          <strong className="text-zinc-900">{device.name}</strong>.
+        </p>
+
+        <div className="space-y-2">
+          <label className="flex items-center gap-2 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm">
+            <input
+              type="radio"
+              name="category-mode"
+              checked={mode === "all"}
+              onChange={() => setMode("all")}
+              className="h-4 w-4 accent-amber-500"
+            />
+            <span className="font-medium text-zinc-800">Semua kategori</span>
+          </label>
+          <label className="flex items-center gap-2 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm">
+            <input
+              type="radio"
+              name="category-mode"
+              checked={mode === "selected"}
+              onChange={() => setMode("selected")}
+              className="h-4 w-4 accent-amber-500"
+            />
+            <span className="font-medium text-zinc-800">Kategori tertentu</span>
+          </label>
+        </div>
+
+        {mode === "selected" && (
+          <div>
+            <p className="mb-2 text-xs text-zinc-500">
+              Pilih minimal satu kategori (kategori nonaktif tidak ditampilkan):
+            </p>
+            <div className="max-h-56 space-y-1 overflow-y-auto rounded-lg border border-zinc-200 p-2">
+              {categories.length === 0 ? (
+                <p className="px-2 py-3 text-sm text-zinc-500">
+                  Belum ada kategori aktif.
+                </p>
+              ) : (
+                categories.map((c) => (
+                  <label
+                    key={c.id}
+                    className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-amber-50"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selected.includes(c.id)}
+                      onChange={() => toggleCategory(c.id)}
+                      className="h-4 w-4 accent-amber-500"
+                    />
+                    <span className="text-zinc-700">{c.name}</span>
+                  </label>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+
+        {error && <ErrorMessage message={error} />}
+      </div>
+    </Modal>
+  );
+}
+
 export function DisplayDeviceManager() {
   const router = useRouter();
   const [devices, setDevices] = useState<DisplayDeviceDto[]>([]);
+  const [categories, setCategories] = useState<CategoryDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [registerOpen, setRegisterOpen] = useState(false);
   const [result, setResult] = useState<RegisteredDisplayDto | null>(null);
   const [togglingId, setTogglingId] = useState<number | null>(null);
+  const [editTarget, setEditTarget] = useState<DisplayDeviceDto | null>(null);
 
   const load = useCallback(async () => {
     try {
-      const res = await fetchJSON<{ devices: DisplayDeviceDto[] }>(
-        "/api/display/devices"
-      );
-      setDevices(res.devices);
+      const [devRes, catRes] = await Promise.all([
+        fetchJSON<{ devices: DisplayDeviceDto[] }>("/api/display/devices"),
+        fetchJSON<{ categories: CategoryDto[] }>("/api/categories"),
+      ]);
+      setDevices(devRes.devices);
+      setCategories(catRes.categories);
       setError(null);
     } catch (err) {
       if (err instanceof ApiClientError && err.status === 401) {
@@ -180,6 +325,8 @@ export function DisplayDeviceManager() {
       setTogglingId(null);
     }
   }
+
+  const activeCategories = categories.filter((c) => c.isActive);
 
   return (
     <div className="space-y-4">
@@ -229,15 +376,27 @@ export function DisplayDeviceManager() {
                     ? formatDateTime(device.lastSeenAt)
                     : "belum pernah"}
                 </p>
+                <p className="mt-0.5 text-xs font-medium text-amber-700">
+                  {categorySummary(device)}
+                </p>
               </div>
-              <Button
-                variant="ghost"
-                className="px-3"
-                loading={togglingId === device.id}
-                onClick={() => toggle(device)}
-              >
-                {device.isActive ? "Nonaktifkan" : "Aktifkan"}
-              </Button>
+              <div className="flex shrink-0 items-center gap-2">
+                <Button
+                  variant="ghost"
+                  className="whitespace-nowrap px-3"
+                  onClick={() => setEditTarget(device)}
+                >
+                  Atur Kategori
+                </Button>
+                <Button
+                  variant="ghost"
+                  className="px-3"
+                  loading={togglingId === device.id}
+                  onClick={() => toggle(device)}
+                >
+                  {device.isActive ? "Nonaktifkan" : "Aktifkan"}
+                </Button>
+              </div>
             </div>
           ))}
         </div>
@@ -261,6 +420,20 @@ export function DisplayDeviceManager() {
 
       {result && (
         <TokenResult result={result} onClose={() => setResult(null)} />
+      )}
+
+      {editTarget && (
+        <CategorySelectionModal
+          device={editTarget}
+          categories={activeCategories}
+          onClose={() => setEditTarget(null)}
+          onSaved={(updated) => {
+            setDevices((prev) =>
+              prev.map((d) => (d.id === updated.id ? updated : d))
+            );
+            setEditTarget(null);
+          }}
+        />
       )}
     </div>
   );

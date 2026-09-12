@@ -23,10 +23,14 @@ export function generateDisplayToken(): { raw: string; tokenHash: string } {
 /**
  * Memverifikasi token display & mencatat last_seen_at.
  * Token mentah tidak pernah disimpan; hanya HMAC-nya (Section 29 & 45).
+ *
+ * Mengembalikan konfigurasi kategori device (System Plan V2 §13):
+ * showAllCategories=true → display berhak atas seluruh kategori;
+ * false → display hanya berhak atas categoryIds yang dipilih.
  */
 export async function authenticateDisplay(
   request: Request
-): Promise<{ id: number; name: string }> {
+): Promise<{ id: number; name: string; showAllCategories: boolean; categoryIds: number[] }> {
   const url = new URL(request.url);
   const raw =
     request.headers.get("x-display-token") ?? url.searchParams.get("token");
@@ -37,7 +41,12 @@ export async function authenticateDisplay(
 
   const device = await prisma.displayDevice.findFirst({
     where: { displayToken: hashDisplayToken(raw), isActive: true },
-    select: { id: true, name: true },
+    select: {
+      id: true,
+      name: true,
+      showAllCategories: true,
+      categories: { select: { id: true } },
+    },
   });
 
   if (!device) {
@@ -49,5 +58,10 @@ export async function authenticateDisplay(
     data: { lastSeenAt: new Date() },
   });
 
-  return device;
+  return {
+    id: device.id,
+    name: device.name,
+    showAllCategories: device.showAllCategories,
+    categoryIds: device.categories.map((c) => c.id),
+  };
 }

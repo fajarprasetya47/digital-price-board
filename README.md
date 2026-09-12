@@ -17,7 +17,7 @@ System Plan lengkap: [`docs/Digital-Price-Board-System-Plan-V1.2.md`](docs/Digit
 - Kelola produk (buat/edit/cari/aktif-nonaktif/urutan)
 - Ubah harga jual cepat (one-step, tanpa buka halaman detail)
 - Riwayat perubahan harga per produk
-- Kelola perangkat display (daftarkan, token sekali pakai, aktif-nonaktif, last seen)
+- Kelola perangkat display (daftarkan, token sekali pakai, aktif-nonaktif, last seen, atur kategori per display)
 
 **Display (read-only)**
 - Halaman display per token: `/display/<token>`
@@ -166,10 +166,12 @@ docker compose logs -f app
 | `MYSQL_USER` / `MYSQL_PASSWORD` | ✓ (compose) | User aplikasi DB |
 | `MYSQL_PORT` | – | Port host MySQL (default `3307`) |
 | `DATABASE_URL` | ✓ | Koneksi Prisma (dipakai saat run di host / migrate) |
-| `APP_URL` | ✓ | URL publik; dipakai membangun `displayUrl` saat daftarkan perangkat display |
+| `APP_URL` | ✓ | URL publik; dipakai membangun `displayUrl` saat daftarkan perangkat display. Skema `https://` mengaktifkan atribut `Secure` pada cookie sesi; `http://` untuk dev/akses LAN lokal |
 | `AUTH_SECRET` | ✓ | Secret sign JWT sesi owner |
 | `DISPLAY_TOKEN_SECRET` | ✓ | Secret HMAC token display |
 | `SESSION_MAX_AGE` | ✓ | Durasi sesi owner dalam detik (tidak di-hardcode) |
+| `DISPLAY_MODE` | – | Mode display: `pages` (default; satu-satunya mode V2) |
+| `DISPLAY_ROTATE_SECONDS` | – | Interval ganti halaman display dalam detik (default `10`) |
 | `APP_PORT` | – | Port host untuk app container (default `3000`) |
 | `SEED` | – | `1` untuk menjalankan seed saat container start |
 | `SEED_OWNER_PASSWORD` | – | Password owner default |
@@ -218,6 +220,7 @@ Perubahan harga selalu melalui satu jalur transaksi (update `selling_price` + in
 2. Masukkan nama perangkat → token unik muncul **sekali** (+ URL display).
 3. Buka URL pada TV/monitor/tablet di toko (contoh: `/display/dev-display-token`).
 4. Layar memuat data via token display, menyimpan cache lokal, dan sinkron tiap 60 detik.
+5. Bila produk tidak muat satu layar, display otomatis membagi menjadi beberapa halaman dan berganti tiap `DISPLAY_ROTATE_SECONDS` detik (ada indikator "Halaman x / y"). Rotasi berhenti saat search aktif.
 
 Revoke: nonaktifkan perangkat di menu Display; token tidak akan lagi diterima (HTTP 401).
 
@@ -226,7 +229,7 @@ Revoke: nonaktifkan perangkat di menu Display; token tidak akan lagi diterima (H
 ## Keamanan
 
 - Password di-hash (bcrypt), tidak pernah dikirim ke client
-- Sesi owner: JWT httpOnly cookie + masa berlaku dari env
+- Sesi owner: JWT httpOnly cookie + masa berlaku dari env (atribut `Secure` otomatis aktif bila `APP_URL` ber-skema `https://`)
 - Token display disimpan sebagai HMAC-SHA256 (token mentah tidak tersimpan di DB)
 - Seluruh input divalidasi di sisi server (Zod); API menolak request yang tidak sah
 - Secret tidak pernah di-commit; `.env` di luar image Docker

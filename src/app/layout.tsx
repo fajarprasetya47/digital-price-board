@@ -7,6 +7,14 @@ export const metadata: Metadata = {
     template: "%s | Digital Price Board",
   },
   description: "Papan harga digital toko pakan.",
+  icons: {
+    icon: [
+      { url: "/favicon/icon1.png", sizes: "96x96", type: "image/png" },
+      { url: "/favicon/favicon.ico" },
+    ],
+    apple: "/favicon/apple-icon.png",
+  },
+  manifest: "/favicon/manifest.json",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

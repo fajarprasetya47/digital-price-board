@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { fetchJSON, ApiClientError } from "@/lib/client/api";
 import type { DisplayPricesDto } from "@/lib/api-types";
 import type { DisplayMode } from "@/app/(display)/display/[token]/page";
@@ -162,6 +163,7 @@ export function DisplayScreen({
       {/* Header */}
       <header className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-800 px-6 py-4">
         <div className="flex items-center gap-3">
+          <Image src="/icon-dpb.svg" alt="" width={36} height={36} />
           <h1 className="text-2xl font-bold uppercase tracking-wide text-white sm:text-3xl">
             Daftar Harga Jual
           </h1>

@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { getCurrentUser } from "@/lib/auth/dal";
 import { NavLink } from "@/components/shell/nav-link";
 import { LogoutButton } from "@/components/shell/logout-button";
@@ -14,9 +15,12 @@ export default async function DashboardLayout({
       <header className="sticky top-0 z-10 border-b border-zinc-200 bg-stone-100">
         <div className="mx-auto flex w-full max-w-5xl items-center justify-between gap-4 px-4 py-3">
           <div className="flex items-center gap-4">
-            <span className="text-base font-bold tracking-tight text-zinc-900">
-              Digital Price Board
-            </span>
+            <div className="flex items-center gap-2">
+              <Image src="/icon-dpb.svg" alt="" width={24} height={24} />
+              <span className="text-base font-bold tracking-tight text-zinc-900">
+                Digital Price Board
+              </span>
+            </div>
             <nav className="hidden items-center gap-1 sm:flex">
               <NavLink href="/products">Produk</NavLink>
               <NavLink href="/categories">Kategori</NavLink>

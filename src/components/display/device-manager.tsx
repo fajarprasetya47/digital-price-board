@@ -12,8 +12,11 @@ import type {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Modal } from "@/components/ui/modal";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { CheckIcon, PlusIcon, PowerIcon, SlidersIcon, TrashIcon } from "@/components/ui/icons";
 import { Field, Input } from "@/components/ui/input";
 import { ErrorMessage, EmptyState, LoadingBlock } from "@/components/ui/feedback";
+import { SearchInput } from "@/components/ui/search-input";
 
 function RegisterModal({
   onClose,
@@ -57,6 +60,7 @@ function RegisterModal({
             Batal
           </Button>
           <Button type="submit" form="register-form" loading={saving}>
+            <PlusIcon />
             Daftarkan
           </Button>
         </>
@@ -203,6 +207,7 @@ function CategorySelectionModal({
             Batal
           </Button>
           <Button type="button" onClick={onSubmit} loading={saving}>
+            <CheckIcon />
             Simpan
           </Button>
         </>
@@ -283,6 +288,10 @@ export function DisplayDeviceManager() {
   const [result, setResult] = useState<RegisteredDisplayDto | null>(null);
   const [togglingId, setTogglingId] = useState<number | null>(null);
   const [editTarget, setEditTarget] = useState<DisplayDeviceDto | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<DisplayDeviceDto | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [query, setQuery] = useState("");
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -326,7 +335,25 @@ export function DisplayDeviceManager() {
     }
   }
 
+  async function confirmDelete() {
+    if (!deleteTarget) return;
+    setDeleteError(null);
+    setDeleting(true);
+    try {
+      await fetchJSON(`/api/display/devices/${deleteTarget.id}`, { method: "DELETE" });
+      setDevices((prev) => prev.filter((d) => d.id !== deleteTarget.id));
+      setDeleteTarget(null);
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : "Gagal menghapus perangkat.");
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   const activeCategories = categories.filter((c) => c.isActive);
+  const filtered = devices.filter((d) =>
+    d.name.toLowerCase().includes(query.trim().toLowerCase())
+  );
 
   return (
     <div className="space-y-4">
@@ -338,7 +365,10 @@ export function DisplayDeviceManager() {
             {devices.filter((d) => d.isActive).length} aktif
           </p>
         </div>
-        <Button onClick={() => setRegisterOpen(true)}>Daftarkan</Button>
+        <Button onClick={() => setRegisterOpen(true)}>
+          <PlusIcon />
+          Daftarkan
+        </Button>
       </div>
 
       <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
@@ -348,13 +378,18 @@ export function DisplayDeviceManager() {
 
       {loading && <LoadingBlock />}
       {!loading && error && <ErrorMessage message={error} onRetry={load} />}
+      <SearchInput value={query} onChange={setQuery} placeholder="Cari perangkat..." />
+
       {!loading && !error && devices.length === 0 && (
         <EmptyState message="Belum ada perangkat display." />
       )}
+      {!loading && !error && devices.length > 0 && filtered.length === 0 && (
+        <EmptyState message="Tidak ada perangkat yang cocok." />
+      )}
 
-      {!loading && !error && devices.length > 0 && (
+      {!loading && !error && filtered.length > 0 && (
         <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white">
-          {devices.map((device) => (
+          {filtered.map((device) => (
             <div
               key={device.id}
               className="flex items-center justify-between gap-3 border-b border-zinc-100 px-4 py-3 last:border-b-0"
@@ -386,6 +421,7 @@ export function DisplayDeviceManager() {
                   className="whitespace-nowrap px-3"
                   onClick={() => setEditTarget(device)}
                 >
+                  <SlidersIcon />
                   Atur Kategori
                 </Button>
                 <Button
@@ -394,7 +430,19 @@ export function DisplayDeviceManager() {
                   loading={togglingId === device.id}
                   onClick={() => toggle(device)}
                 >
+                  <PowerIcon />
                   {device.isActive ? "Nonaktifkan" : "Aktifkan"}
+                </Button>
+                <Button
+                  variant="ghost"
+                  className="px-3 text-red-600 hover:bg-red-50"
+                  onClick={() => {
+                    setDeleteError(null);
+                    setDeleteTarget(device);
+                  }}
+                >
+                  <TrashIcon />
+                  Hapus
                 </Button>
               </div>
             </div>
@@ -420,6 +468,17 @@ export function DisplayDeviceManager() {
 
       {result && (
         <TokenResult result={result} onClose={() => setResult(null)} />
+      )}
+
+      {deleteTarget && (
+        <ConfirmDialog
+          title="Hapus Perangkat Display"
+          message={`Perangkat "${deleteTarget.name}" akan dihapus permanen. Layar yang memakai token ini tidak bisa lagi menampilkan harga.`}
+          loading={deleting}
+          error={deleteError}
+          onConfirm={confirmDelete}
+          onCancel={() => setDeleteTarget(null)}
+        />
       )}
 
       {editTarget && (

@@ -6,6 +6,7 @@ import { fetchJSON } from "@/lib/client/api";
 import type { ProductDto } from "@/lib/api-types";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
+import { CheckIcon } from "@/components/ui/icons";
 import { Field, Input } from "@/components/ui/input";
 import { ErrorMessage } from "@/components/ui/feedback";
 
@@ -57,6 +58,7 @@ export function PriceEditSheet({
             Batal
           </Button>
           <Button type="submit" form="price-form" loading={saving}>
+            <CheckIcon />
             Simpan
           </Button>
         </>

@@ -7,6 +7,9 @@ import type { CategoryDto } from "@/lib/api-types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Modal } from "@/components/ui/modal";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { CheckIcon, EditIcon, PlusIcon, PowerIcon, TrashIcon } from "@/components/ui/icons";
+import { SearchInput } from "@/components/ui/search-input";
 import { Field, Input } from "@/components/ui/input";
 import { ErrorMessage, EmptyState, LoadingBlock } from "@/components/ui/feedback";
 
@@ -78,6 +81,7 @@ function CategoryFormModal({
             Batal
           </Button>
           <Button type="submit" form="category-form" loading={saving}>
+            <CheckIcon />
             Simpan
           </Button>
         </>
@@ -126,6 +130,10 @@ export function CategoryManager() {
   const [error, setError] = useState<string | null>(null);
   const [formMode, setFormMode] = useState<FormMode | null>(null);
   const [togglingId, setTogglingId] = useState<number | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<CategoryDto | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
 
   const load = useCallback(async () => {
     try {
@@ -167,6 +175,21 @@ export function CategoryManager() {
     }
   }
 
+  async function confirmDelete() {
+    if (!deleteTarget) return;
+    setDeleteError(null);
+    setDeleting(true);
+    try {
+      await fetchJSON(`/api/categories/${deleteTarget.id}`, { method: "DELETE" });
+      setCategories((prev) => prev.filter((c) => c.id !== deleteTarget.id));
+      setDeleteTarget(null);
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : "Gagal menghapus kategori.");
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   function handleSaved(category: CategoryDto) {
     setCategories((prev) => {
       const exists = prev.some((c) => c.id === category.id);
@@ -178,6 +201,10 @@ export function CategoryManager() {
     });
   }
 
+  const filtered = categories.filter((c) =>
+    c.name.toLowerCase().includes(query.trim().toLowerCase())
+  );
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3">
@@ -187,18 +214,26 @@ export function CategoryManager() {
             {categories.length} kategori
           </p>
         </div>
-        <Button onClick={() => setFormMode({ type: "create" })}>Tambah</Button>
+        <Button onClick={() => setFormMode({ type: "create" })}>
+          <PlusIcon />
+          Tambah
+        </Button>
       </div>
+
+      <SearchInput value={query} onChange={setQuery} placeholder="Cari kategori..." />
 
       {loading && <LoadingBlock />}
       {!loading && error && <ErrorMessage message={error} onRetry={load} />}
       {!loading && !error && categories.length === 0 && (
         <EmptyState message="Belum ada kategori." />
       )}
+      {!loading && !error && categories.length > 0 && filtered.length === 0 && (
+        <EmptyState message="Tidak ada kategori yang cocok." />
+      )}
 
-      {!loading && !error && categories.length > 0 && (
+      {!loading && !error && filtered.length > 0 && (
         <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white">
-          {categories.map((category) => (
+          {filtered.map((category) => (
             <div
               key={category.id}
               className="flex items-center justify-between gap-3 border-b border-zinc-100 px-4 py-3 last:border-b-0"
@@ -224,6 +259,7 @@ export function CategoryManager() {
                   className="px-3"
                   onClick={() => setFormMode({ type: "edit", category })}
                 >
+                  <EditIcon />
                   Edit
                 </Button>
                 <Button
@@ -232,7 +268,19 @@ export function CategoryManager() {
                   loading={togglingId === category.id}
                   onClick={() => toggle(category)}
                 >
+                  <PowerIcon />
                   {category.isActive ? "Nonaktifkan" : "Aktifkan"}
+                </Button>
+                <Button
+                  variant="ghost"
+                  className="px-3 text-red-600 hover:bg-red-50"
+                  onClick={() => {
+                    setDeleteError(null);
+                    setDeleteTarget(category);
+                  }}
+                >
+                  <TrashIcon />
+                  Hapus
                 </Button>
               </div>
             </div>
@@ -245,6 +293,17 @@ export function CategoryManager() {
           mode={formMode}
           onClose={() => setFormMode(null)}
           onSaved={handleSaved}
+        />
+      )}
+
+      {deleteTarget && (
+        <ConfirmDialog
+          title="Hapus Kategori"
+          message={`Kategori "${deleteTarget.name}" akan dihapus permanen. Kategori hanya bisa dihapus jika sudah tidak memiliki produk.`}
+          loading={deleting}
+          error={deleteError}
+          onConfirm={confirmDelete}
+          onCancel={() => setDeleteTarget(null)}
         />
       )}
     </div>

@@ -18,6 +18,27 @@ const updateSchema = z
   })
   .refine((data) => Object.keys(data).length > 0, "Tidak ada field yang dikirim.");
 
+export const DELETE = withErrorHandling(
+  async (_request: Request, ctx: RouteContext<"/api/display/devices/[id]">) => {
+    await requireApiUser();
+
+    const id = await getPositiveId(ctx.params);
+    const existing = await prisma.displayDevice.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+    if (!existing) {
+      throw notFound("Perangkat display tidak ditemukan.");
+    }
+
+    // Hapus permanen: token ikut hilang sehingga layar lama tidak bisa
+    // lagi mengakses data. Relasi kategori dibersihkan otomatis.
+    await prisma.displayDevice.delete({ where: { id } });
+
+    return ok({ deleted: true });
+  }
+);
+
 export const PATCH = withErrorHandling(
   async (request: Request, ctx: RouteContext<"/api/display/devices/[id]">) => {
     await requireApiUser();

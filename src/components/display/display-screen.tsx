@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { fetchJSON, ApiClientError } from "@/lib/client/api";
 import type { DisplayPricesDto } from "@/lib/api-types";
 import type { DisplayMode } from "@/app/(display)/display/[token]/page";
@@ -162,6 +163,7 @@ export function DisplayScreen({
       {/* Header */}
       <header className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-800 px-6 py-4">
         <div className="flex items-center gap-3">
+          <Image src="/icon-dpb.svg" alt="" width={36} height={36} />
           <h1 className="text-2xl font-bold uppercase tracking-wide text-white sm:text-3xl">
             Daftar Harga Jual
           </h1>
@@ -251,19 +253,24 @@ export function DisplayScreen({
       )}
 
       {/* Footer waktu */}
-      <footer className="flex items-center justify-between border-t border-zinc-800 px-6 py-3 text-sm text-zinc-500">
-        <span>
+      <footer className="grid grid-cols-3 items-center gap-4 border-t border-zinc-800 px-6 py-3 text-sm text-zinc-500">
+        <span className="justify-self-start">
           Last sync:{" "}
           {lastSyncAt
             ? `${formatClock(lastSyncAt.toISOString())} (${timeAgo(lastSyncAt, now)})`
             : "-"}
         </span>
-        {pageInfo.total > 1 && !searchActive && (
-          <span>
-            Halaman {pageInfo.page + 1} / {pageInfo.total}
-          </span>
-        )}
-        {isFullscreen && <span>Mode layar penuh aktif</span>}
+        <span className="justify-self-center whitespace-nowrap text-zinc-600">
+          Created by Japrasetya
+        </span>
+        <div className="flex items-center gap-4 justify-self-end">
+          {pageInfo.total > 1 && !searchActive && (
+            <span>
+              Halaman {pageInfo.page + 1} / {pageInfo.total}
+            </span>
+          )}
+          {isFullscreen && <span>Mode layar penuh aktif</span>}
+        </div>
       </footer>
     </div>
   );

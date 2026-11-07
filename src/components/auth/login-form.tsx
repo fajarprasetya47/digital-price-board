@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { fetchJSON } from "@/lib/client/api";
 import { Button } from "@/components/ui/button";
+import { LoginIcon } from "@/components/ui/icons";
 import { Input, Field } from "@/components/ui/input";
 import { ErrorMessage } from "@/components/ui/feedback";
 
@@ -55,6 +56,7 @@ export function LoginForm() {
         />
       </Field>
       <Button type="submit" loading={loading} className="w-full">
+        <LoginIcon />
         Masuk
       </Button>
       <p className="text-center text-xs text-zinc-500">

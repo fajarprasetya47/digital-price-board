@@ -19,7 +19,7 @@ export const GET = withErrorHandling(async (request: Request) => {
   const categoryId = url.searchParams.get("categoryId");
   const active = url.searchParams.get("active");
 
-  const where: Prisma.ProductWhereInput = {};
+  const where: Prisma.ProductWhereInput = { deletedAt: null };
   if (q) where.name = { contains: q };
   if (categoryId) {
     const parsed = Number(categoryId);

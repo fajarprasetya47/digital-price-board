@@ -40,8 +40,8 @@ export function productToDto(product: {
 }
 
 export async function getProductOr404(productId: number) {
-  const product = await prisma.product.findUnique({
-    where: { id: productId },
+  const product = await prisma.product.findFirst({
+    where: { id: productId, deletedAt: null },
     select: productSelect,
   });
   if (!product) {

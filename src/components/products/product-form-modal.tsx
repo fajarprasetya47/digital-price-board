@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { Field, Input, Select } from "@/components/ui/input";
 import { ErrorMessage } from "@/components/ui/feedback";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 export type ProductFormMode =
   | { type: "create" }
@@ -17,11 +18,13 @@ export function ProductFormModal({
   categories,
   onClose,
   onSaved,
+  onDeleted,
 }: {
   mode: ProductFormMode;
   categories: CategoryDto[];
   onClose: () => void;
   onSaved: (product: ProductDto) => void;
+  onDeleted?: (productId: number) => void;
 }) {
   const isEdit = mode.type === "edit";
   const initial = isEdit ? mode.product : null;
@@ -39,6 +42,23 @@ export function ProductFormModal({
   );
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  async function onDelete() {
+    if (!isEdit) return;
+    setDeleteError(null);
+    setDeleting(true);
+    try {
+      await fetchJSON(`/api/products/${mode.product.id}`, { method: "DELETE" });
+      onDeleted?.(mode.product.id);
+      onClose();
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : "Gagal menghapus produk.");
+      setDeleting(false);
+    }
+  }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -93,12 +113,24 @@ export function ProductFormModal({
   }
 
   return (
+    <>
     <Modal
       open
       onClose={onClose}
       title={isEdit ? "Ubah Produk" : "Tambah Produk"}
       footer={
         <>
+          {isEdit && (
+            <Button
+              variant="ghost"
+              type="button"
+              className="mr-auto text-red-600 hover:bg-red-50"
+              onClick={() => setConfirmDelete(true)}
+              disabled={saving}
+            >
+              Hapus
+            </Button>
+          )}
           <Button variant="secondary" type="button" onClick={onClose} disabled={saving}>
             Batal
           </Button>
@@ -163,5 +195,16 @@ export function ProductFormModal({
         </div>
       </form>
     </Modal>
+      {confirmDelete && isEdit && (
+        <ConfirmDialog
+          title="Hapus Produk"
+          message={`Produk "${mode.product.name}" akan dihapus dari daftar dan layar display. Riwayat harganya tetap tersimpan.`}
+          loading={deleting}
+          error={deleteError}
+          onConfirm={onDelete}
+          onCancel={() => setConfirmDelete(false)}
+        />
+      )}
+    </>
   );
 }

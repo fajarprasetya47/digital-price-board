@@ -36,7 +36,7 @@ export const GET = withErrorHandling(async () => {
       displayOrder: true,
       createdAt: true,
       updatedAt: true,
-      _count: { select: { products: true } },
+      _count: { select: { products: { where: { deletedAt: null } } } },
     },
   });
 

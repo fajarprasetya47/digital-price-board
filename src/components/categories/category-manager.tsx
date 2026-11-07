@@ -7,6 +7,7 @@ import type { CategoryDto } from "@/lib/api-types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Modal } from "@/components/ui/modal";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Field, Input } from "@/components/ui/input";
 import { ErrorMessage, EmptyState, LoadingBlock } from "@/components/ui/feedback";
 
@@ -126,6 +127,9 @@ export function CategoryManager() {
   const [error, setError] = useState<string | null>(null);
   const [formMode, setFormMode] = useState<FormMode | null>(null);
   const [togglingId, setTogglingId] = useState<number | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<CategoryDto | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -164,6 +168,21 @@ export function CategoryManager() {
       alert(err instanceof Error ? err.message : "Gagal mengubah status.");
     } finally {
       setTogglingId(null);
+    }
+  }
+
+  async function confirmDelete() {
+    if (!deleteTarget) return;
+    setDeleteError(null);
+    setDeleting(true);
+    try {
+      await fetchJSON(`/api/categories/${deleteTarget.id}`, { method: "DELETE" });
+      setCategories((prev) => prev.filter((c) => c.id !== deleteTarget.id));
+      setDeleteTarget(null);
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : "Gagal menghapus kategori.");
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -234,6 +253,16 @@ export function CategoryManager() {
                 >
                   {category.isActive ? "Nonaktifkan" : "Aktifkan"}
                 </Button>
+                <Button
+                  variant="ghost"
+                  className="px-3 text-red-600 hover:bg-red-50"
+                  onClick={() => {
+                    setDeleteError(null);
+                    setDeleteTarget(category);
+                  }}
+                >
+                  Hapus
+                </Button>
               </div>
             </div>
           ))}
@@ -245,6 +274,17 @@ export function CategoryManager() {
           mode={formMode}
           onClose={() => setFormMode(null)}
           onSaved={handleSaved}
+        />
+      )}
+
+      {deleteTarget && (
+        <ConfirmDialog
+          title="Hapus Kategori"
+          message={`Kategori "${deleteTarget.name}" akan dihapus permanen. Kategori hanya bisa dihapus jika sudah tidak memiliki produk.`}
+          loading={deleting}
+          error={deleteError}
+          onConfirm={confirmDelete}
+          onCancel={() => setDeleteTarget(null)}
         />
       )}
     </div>

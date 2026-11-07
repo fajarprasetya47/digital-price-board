@@ -12,6 +12,7 @@ import type {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Modal } from "@/components/ui/modal";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Field, Input } from "@/components/ui/input";
 import { ErrorMessage, EmptyState, LoadingBlock } from "@/components/ui/feedback";
 
@@ -283,6 +284,9 @@ export function DisplayDeviceManager() {
   const [result, setResult] = useState<RegisteredDisplayDto | null>(null);
   const [togglingId, setTogglingId] = useState<number | null>(null);
   const [editTarget, setEditTarget] = useState<DisplayDeviceDto | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<DisplayDeviceDto | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -323,6 +327,21 @@ export function DisplayDeviceManager() {
       alert(err instanceof Error ? err.message : "Gagal mengubah perangkat.");
     } finally {
       setTogglingId(null);
+    }
+  }
+
+  async function confirmDelete() {
+    if (!deleteTarget) return;
+    setDeleteError(null);
+    setDeleting(true);
+    try {
+      await fetchJSON(`/api/display/devices/${deleteTarget.id}`, { method: "DELETE" });
+      setDevices((prev) => prev.filter((d) => d.id !== deleteTarget.id));
+      setDeleteTarget(null);
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : "Gagal menghapus perangkat.");
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -396,6 +415,16 @@ export function DisplayDeviceManager() {
                 >
                   {device.isActive ? "Nonaktifkan" : "Aktifkan"}
                 </Button>
+                <Button
+                  variant="ghost"
+                  className="px-3 text-red-600 hover:bg-red-50"
+                  onClick={() => {
+                    setDeleteError(null);
+                    setDeleteTarget(device);
+                  }}
+                >
+                  Hapus
+                </Button>
               </div>
             </div>
           ))}
@@ -420,6 +449,17 @@ export function DisplayDeviceManager() {
 
       {result && (
         <TokenResult result={result} onClose={() => setResult(null)} />
+      )}
+
+      {deleteTarget && (
+        <ConfirmDialog
+          title="Hapus Perangkat Display"
+          message={`Perangkat "${deleteTarget.name}" akan dihapus permanen. Layar yang memakai token ini tidak bisa lagi menampilkan harga.`}
+          loading={deleting}
+          error={deleteError}
+          onConfirm={confirmDelete}
+          onCancel={() => setDeleteTarget(null)}
+        />
       )}
 
       {editTarget && (

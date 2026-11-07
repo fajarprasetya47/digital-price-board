@@ -1,5 +1,5 @@
 import { withErrorHandling } from "@/lib/errors/handler";
-import { notFound, validationError } from "@/lib/errors/api-error";
+import { ApiError, ERROR_CODES, notFound, validationError } from "@/lib/errors/api-error";
 import { requireApiUser } from "@/lib/auth/dal";
 import { prisma } from "@/lib/db/prisma";
 import { readJson, ok } from "@/lib/utils/api";
@@ -30,7 +30,7 @@ export const GET = withErrorHandling(async (_request: Request, ctx: RouteContext
       displayOrder: true,
       createdAt: true,
       updatedAt: true,
-      _count: { select: { products: true } },
+      _count: { select: { products: { where: { deletedAt: null } } } },
     },
   });
 
@@ -90,4 +90,31 @@ export const PATCH = withErrorHandling(async (request: Request, ctx: RouteContex
       displayOrder: category.displayOrder,
     },
   });
+});
+
+export const DELETE = withErrorHandling(async (_request: Request, ctx: RouteContext<"/api/categories/[id]">) => {
+  await requireApiUser();
+
+  const id = await getCategoryId(ctx.params);
+  const category = await prisma.category.findUnique({
+    where: { id },
+    select: { id: true, _count: { select: { products: true } } },
+  });
+  if (!category) {
+    throw notFound("Kategori tidak ditemukan.");
+  }
+
+  // Produk yang sudah dihapus (soft delete) tetap dihitung: relasinya
+  // masih ada di database dan riwayat harganya perlu dipertahankan.
+  if (category._count.products > 0) {
+    throw new ApiError(
+      ERROR_CODES.VALIDATION_ERROR,
+      "Kategori tidak bisa dihapus karena masih memiliki produk (termasuk produk yang sudah dihapus). Nonaktifkan kategori ini sebagai gantinya.",
+      { status: 422 }
+    );
+  }
+
+  await prisma.category.delete({ where: { id } });
+
+  return ok({ deleted: true });
 });

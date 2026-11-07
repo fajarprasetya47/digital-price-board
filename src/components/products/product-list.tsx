@@ -199,6 +199,9 @@ export function ProductList() {
           categories={categories}
           onClose={() => setFormMode(null)}
           onSaved={handleSaved}
+          onDeleted={(productId) =>
+            setProducts((prev) => prev.filter((p) => p.id !== productId))
+          }
         />
       )}
     </div>

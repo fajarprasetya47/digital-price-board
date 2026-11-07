@@ -1,5 +1,5 @@
 import { withErrorHandling } from "@/lib/errors/handler";
-import { validationError } from "@/lib/errors/api-error";
+import { notFound, validationError } from "@/lib/errors/api-error";
 import { requireApiUser } from "@/lib/auth/dal";
 import { prisma } from "@/lib/db/prisma";
 import { readJson, ok } from "@/lib/utils/api";
@@ -19,8 +19,8 @@ export const GET = withErrorHandling(
     await requireApiUser();
 
     const id = await getPositiveId(ctx.params);
-    const product = await prisma.product.findUnique({
-      where: { id },
+    const product = await prisma.product.findFirst({
+      where: { id, deletedAt: null },
       select: productSelect,
     });
     if (!product) {
@@ -36,8 +36,8 @@ export const PATCH = withErrorHandling(
     const user = await requireApiUser();
 
     const id = await getPositiveId(ctx.params);
-    const existing = await prisma.product.findUnique({
-      where: { id },
+    const existing = await prisma.product.findFirst({
+      where: { id, deletedAt: null },
       select: { id: true, sellingPrice: true },
     });
     if (!existing) {
@@ -82,5 +82,28 @@ export const PATCH = withErrorHandling(
     });
 
     return ok({ product: updated ? productToDto(updated) : null });
+  }
+);
+
+// Hapus produk bersifat soft delete: riwayat harga tetap tersimpan.
+export const DELETE = withErrorHandling(
+  async (_request: Request, ctx: RouteContext<"/api/products/[id]">) => {
+    await requireApiUser();
+
+    const id = await getPositiveId(ctx.params);
+    const existing = await prisma.product.findFirst({
+      where: { id, deletedAt: null },
+      select: { id: true },
+    });
+    if (!existing) {
+      throw notFound("Produk tidak ditemukan.");
+    }
+
+    await prisma.product.update({
+      where: { id },
+      data: { deletedAt: new Date() },
+    });
+
+    return ok({ deleted: true });
   }
 );

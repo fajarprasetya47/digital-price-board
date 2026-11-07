@@ -22,7 +22,7 @@ export const GET = withErrorHandling(async (request: Request) => {
     : { isActive: true, id: { in: device.categoryIds } };
 
   const products = await prisma.product.findMany({
-    where: { isActive: true, category: categoryFilter },
+    where: { isActive: true, deletedAt: null, category: categoryFilter },
     orderBy: [
       { category: { displayOrder: "asc" } },
       { category: { name: "asc" } },

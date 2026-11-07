@@ -40,6 +40,11 @@ export default async function DashboardLayout({
         {children}
       </main>
 
+      <footer className="border-t border-zinc-200 bg-stone-100 px-4 py-3 text-center text-xs text-zinc-500">
+        <p>© {new Date().getFullYear()} Digital Price Board</p>
+        <p className="mt-0.5 font-medium text-zinc-600">Created by Japrasetya</p>
+      </footer>
+
       <nav className="sticky bottom-0 z-10 border-t border-zinc-200 bg-white sm:hidden">
         <div className="flex items-center justify-around py-1">
           <NavLink href="/products">Produk</NavLink>

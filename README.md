@@ -9,7 +9,7 @@ Dokumentasi lengkap:
 - System Plan V1.2: [`docs/Digital-Price-Board-System-Plan-V1.2.md`](docs/Digital-Price-Board-System-Plan-V1.2.md)
 - System Plan V2 (refined): [`docs/Digital-Price-Board-System-Plan-V2-refined.md`](docs/Digital-Price-Board-System-Plan-V2-refined.md)
 
-**Status saat ini:** V1 selesai. V2 **Stage 1** (kategori per perangkat display) dan **Stage 2** (pagination display otomatis) sudah diimplementasikan.
+**Status saat ini:** V1 selesai. V2 **Stage 1** (kategori per perangkat display), **Stage 2** (pagination display otomatis), dan fitur hapus data (produk, kategori, perangkat display) sudah diimplementasikan.
 
 ---
 
@@ -42,11 +42,13 @@ Dokumentasi lengkap:
 **Owner (mobile-first)**
 - Login/logout + sesi dengan masa berlaku via env (`SESSION_MAX_AGE`)
 - Ganti password sendiri (verifikasi password lama, tanpa forgot-password)
-- Kelola kategori (buat/edit/aktif-nonaktif/urutan)
-- Kelola produk (buat/edit/cari/aktif-nonaktif/urutan)
+- Kelola kategori (buat/edit/aktif-nonaktif/urutan/hapus)
+- Kelola produk (buat/edit/cari/aktif-nonaktif/urutan/hapus)
 - Ubah harga jual cepat (one-step, tanpa buka halaman detail)
 - Riwayat perubahan harga per produk
-- Kelola perangkat display (daftarkan, token sekali pakai, aktif-nonaktif, last seen)
+- Kelola perangkat display (daftarkan, token sekali pakai, aktif-nonaktif, hapus, last seen)
+- **Hapus data:** produk dihapus secara *soft delete* (tidak tampil lagi, riwayat harga tetap tersimpan). Kategori hanya bisa dihapus jika tidak punya produk, termasuk produk yang sudah dihapus. Perangkat display dihapus permanen dan tokennya langsung tidak berlaku.
+- Tombol aksi memakai ikon dengan label
 - **Atur kategori per perangkat display** (V2 Stage 1): tampilkan semua kategori aktif, atau pilih kategori tertentu per layar (mis. layar kasir hanya "Pakan Ikan" dan "Pakan Kucing")
 
 **Display (read-only)**
@@ -57,6 +59,7 @@ Dokumentasi lengkap:
 - Sinkronisasi otomatis (polling 60 detik)
 - Offline fallback: tetap menampilkan data terakhir (localStorage) + peringatan `Last sync`
 - Pencarian produk (rotasi berhenti saat pencarian aktif) + tombol fullscreen
+- Footer: waktu `Last sync`, indikator halaman, dan kredit "Created by Japrasetya"
 
 ---
 
@@ -245,9 +248,9 @@ Format error konsisten di seluruh endpoint (lihat System Plan Section 39):
 | Area | Endpoint |
 |---|---|
 | Auth | `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/session`, `PATCH /api/auth/password` |
-| Kategori | `GET/POST /api/categories`, `GET/PATCH /api/categories/[id]` |
-| Produk | `GET/POST /api/products`, `GET/PATCH /api/products/[id]`, `PATCH /api/products/[id]/price`, `GET /api/products/[id]/price-history` |
-| Display | `GET /api/display/prices`, `POST /api/display/register`, `POST /api/display/heartbeat`, `GET /api/display/devices`, `PATCH /api/display/devices/[id]` |
+| Kategori | `GET/POST /api/categories`, `GET/PATCH/DELETE /api/categories/[id]` |
+| Produk | `GET/POST /api/products`, `GET/PATCH/DELETE /api/products/[id]` (DELETE = soft delete), `PATCH /api/products/[id]/price`, `GET /api/products/[id]/price-history` |
+| Display | `GET /api/display/prices`, `POST /api/display/register`, `POST /api/display/heartbeat`, `GET /api/display/devices`, `PATCH/DELETE /api/display/devices/[id]` |
 
 Perubahan harga selalu melalui satu jalur transaksi (update `selling_price` + insert `price_histories`); jika harga tidak berubah, riwayat tidak dibuat.
 
@@ -262,7 +265,7 @@ Perubahan harga selalu melalui satu jalur transaksi (update `selling_price` + in
 5. Layar memuat data via token display, menyimpan cache lokal, dan sinkron tiap 60 detik.
 6. Bila produk tidak muat satu layar, display otomatis membagi menjadi beberapa halaman dan berganti tiap `DISPLAY_ROTATE_SECONDS` detik (ada indikator "Halaman x / y"). Rotasi berhenti saat search aktif.
 
-Revoke: nonaktifkan perangkat di menu Display; token tidak akan lagi diterima (HTTP 401).
+Revoke: nonaktifkan perangkat di menu Display (sementara), atau **hapus** perangkat (permanen). Token yang dinonaktifkan atau dihapus tidak akan lagi diterima (HTTP 401).
 
 ---
 

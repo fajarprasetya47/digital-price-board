@@ -16,6 +16,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { CheckIcon, PlusIcon, PowerIcon, SlidersIcon, TrashIcon } from "@/components/ui/icons";
 import { Field, Input } from "@/components/ui/input";
 import { ErrorMessage, EmptyState, LoadingBlock } from "@/components/ui/feedback";
+import { SearchInput } from "@/components/ui/search-input";
 
 function RegisterModal({
   onClose,
@@ -289,6 +290,7 @@ export function DisplayDeviceManager() {
   const [editTarget, setEditTarget] = useState<DisplayDeviceDto | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<DisplayDeviceDto | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [query, setQuery] = useState("");
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -349,6 +351,9 @@ export function DisplayDeviceManager() {
   }
 
   const activeCategories = categories.filter((c) => c.isActive);
+  const filtered = devices.filter((d) =>
+    d.name.toLowerCase().includes(query.trim().toLowerCase())
+  );
 
   return (
     <div className="space-y-4">
@@ -373,13 +378,18 @@ export function DisplayDeviceManager() {
 
       {loading && <LoadingBlock />}
       {!loading && error && <ErrorMessage message={error} onRetry={load} />}
+      <SearchInput value={query} onChange={setQuery} placeholder="Cari perangkat..." />
+
       {!loading && !error && devices.length === 0 && (
         <EmptyState message="Belum ada perangkat display." />
       )}
+      {!loading && !error && devices.length > 0 && filtered.length === 0 && (
+        <EmptyState message="Tidak ada perangkat yang cocok." />
+      )}
 
-      {!loading && !error && devices.length > 0 && (
+      {!loading && !error && filtered.length > 0 && (
         <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white">
-          {devices.map((device) => (
+          {filtered.map((device) => (
             <div
               key={device.id}
               className="flex items-center justify-between gap-3 border-b border-zinc-100 px-4 py-3 last:border-b-0"

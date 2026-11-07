@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Modal } from "@/components/ui/modal";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { CheckIcon, EditIcon, PlusIcon, PowerIcon, TrashIcon } from "@/components/ui/icons";
+import { SearchInput } from "@/components/ui/search-input";
 import { Field, Input } from "@/components/ui/input";
 import { ErrorMessage, EmptyState, LoadingBlock } from "@/components/ui/feedback";
 
@@ -132,6 +133,7 @@ export function CategoryManager() {
   const [deleteTarget, setDeleteTarget] = useState<CategoryDto | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
 
   const load = useCallback(async () => {
     try {
@@ -199,6 +201,10 @@ export function CategoryManager() {
     });
   }
 
+  const filtered = categories.filter((c) =>
+    c.name.toLowerCase().includes(query.trim().toLowerCase())
+  );
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3">
@@ -214,15 +220,20 @@ export function CategoryManager() {
         </Button>
       </div>
 
+      <SearchInput value={query} onChange={setQuery} placeholder="Cari kategori..." />
+
       {loading && <LoadingBlock />}
       {!loading && error && <ErrorMessage message={error} onRetry={load} />}
       {!loading && !error && categories.length === 0 && (
         <EmptyState message="Belum ada kategori." />
       )}
+      {!loading && !error && categories.length > 0 && filtered.length === 0 && (
+        <EmptyState message="Tidak ada kategori yang cocok." />
+      )}
 
-      {!loading && !error && categories.length > 0 && (
+      {!loading && !error && filtered.length > 0 && (
         <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white">
-          {categories.map((category) => (
+          {filtered.map((category) => (
             <div
               key={category.id}
               className="flex items-center justify-between gap-3 border-b border-zinc-100 px-4 py-3 last:border-b-0"

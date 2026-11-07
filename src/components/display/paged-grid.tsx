@@ -184,8 +184,6 @@ export function PagedGrid({
     onPageChange?.(pageIndex, pages.length);
   }, [pageIndex, pages.length, onPageChange]);
 
-  if (pages.length === 0) return null;
-
   return (
     <div ref={containerRef} className="relative min-h-0 flex-1 overflow-hidden">
       {/* Probe tak terlihat untuk mengukur tinggi satu baris produk. */}

@@ -4,11 +4,40 @@ Aplikasi internal untuk toko pakan: menyimpan daftar produk beserta harga jualny
 
 > **Bukan sistem POS.** Aplikasi tidak mengelola transaksi penjualan (stock, pelanggan, supplier, dsb.). Fokus V1: **Price Management + Price Display**.
 
-System Plan lengkap: [`docs/Digital-Price-Board-System-Plan-V1.2.md`](docs/Digital-Price-Board-System-Plan-V1.2.md)
+Dokumentasi lengkap:
+
+- System Plan V1.2: [`docs/Digital-Price-Board-System-Plan-V1.2.md`](docs/Digital-Price-Board-System-Plan-V1.2.md)
+- System Plan V2 (refined): [`docs/Digital-Price-Board-System-Plan-V2-refined.md`](docs/Digital-Price-Board-System-Plan-V2-refined.md)
+
+**Status saat ini:** V1 selesai. V2 **Stage 1** (kategori per perangkat display) dan **Stage 2** (pagination display otomatis) sudah diimplementasikan.
 
 ---
 
-## Fitur (V1)
+## Screenshot
+
+**Login owner**
+
+![Login owner](public/screenshot/1-login.png)
+
+**Daftar produk (dikelompokkan per kategori)**
+
+![Daftar produk](public/screenshot/2-produk.png)
+
+**Kelola kategori**
+
+![Kelola kategori](public/screenshot/3-category.png)
+
+**Perangkat display (owner)**
+
+![Perangkat display](public/screenshot/4-display.png)
+
+**Tampilan display di toko (dengan pagination)**
+
+![Tampilan display](public/screenshot/5-overview-display.png)
+
+---
+
+## Fitur
 
 **Owner (mobile-first)**
 - Login/logout + sesi dengan masa berlaku via env (`SESSION_MAX_AGE`)
@@ -17,14 +46,17 @@ System Plan lengkap: [`docs/Digital-Price-Board-System-Plan-V1.2.md`](docs/Digit
 - Kelola produk (buat/edit/cari/aktif-nonaktif/urutan)
 - Ubah harga jual cepat (one-step, tanpa buka halaman detail)
 - Riwayat perubahan harga per produk
-- Kelola perangkat display (daftarkan, token sekali pakai, aktif-nonaktif, last seen, atur kategori per display)
+- Kelola perangkat display (daftarkan, token sekali pakai, aktif-nonaktif, last seen)
+- **Atur kategori per perangkat display** (V2 Stage 1): tampilkan semua kategori aktif, atau pilih kategori tertentu per layar (mis. layar kasir hanya "Pakan Ikan" dan "Pakan Kucing")
 
 **Display (read-only)**
 - Halaman display per token: `/display/<token>`
 - Grup produk per kategori, tipografi besar, high readability
+- **Pagination otomatis** (V2 Stage 2): produk yang tidak muat satu layar dibagi ke beberapa halaman, menyesuaikan tinggi dan lebar layar; kategori yang terpotong dilanjutkan dengan header yang diulang
+- **Rotasi halaman** tiap `DISPLAY_ROTATE_SECONDS` detik, dengan indikator "Halaman x / y"
 - Sinkronisasi otomatis (polling 60 detik)
 - Offline fallback: tetap menampilkan data terakhir (localStorage) + peringatan `Last sync`
-- Pencarian produk + tombol fullscreen
+- Pencarian produk (rotasi berhenti saat pencarian aktif) + tombol fullscreen
 
 ---
 
@@ -52,19 +84,25 @@ src/
 │   └── api/                     # Route Handlers (auth, categories, products, display)
 ├── components/
 │   ├── ui/                      # primitives (Button, Input, Modal, Badge, dsb.)
-│   ├── products/ categories/ display/ settings/ shell/
+│   ├── products/ categories/ settings/ shell/
+│   └── display/                 # display-screen, paged-grid (algoritma pagination), device-manager
 ├── lib/
 │   ├── auth/                    # session, password, DAL, display-token
 │   ├── db/                      # Prisma client singleton
 │   ├── errors/                  # format error API (Section 39 System Plan)
+│   ├── services/                # logika bisnis (product, price)
 │   ├── validation/              # skema Zod
 │   ├── client/                  # fetchJSON client-side
 │   └── utils/                   # format Rupiah/tanggal, dsb.
 ├── proxy.ts                     # route guard (protected/public)
 prisma/
 ├── schema.prisma                # users, categories, products, price_histories, display_devices
-├── migrations/                  # migrasi database
+├── migrations/                  # migrasi database (init + display_category_selection)
 └── seed.ts                      # seed awal (owner + contoh data)
+scripts/
+└── verify-pagination.ts         # uji algoritma pagination display
+docs/                            # System Plan V1.2 & V2
+public/screenshot/               # screenshot untuk dokumentasi ini
 Dockerfile · docker-compose.yml · docker-entrypoint.sh
 ```
 
@@ -192,6 +230,7 @@ docker compose logs -f app
 | `npm run db:seed` | Menjalankan seed |
 | `npm run db:generate` | Regenerasi Prisma Client |
 | `npm run db:studio` | Prisma Studio |
+| `npx tsx scripts/verify-pagination.ts` | Uji algoritma pagination display (tanpa database) |
 
 ---
 
@@ -218,9 +257,10 @@ Perubahan harga selalu melalui satu jalur transaksi (update `selling_price` + in
 
 1. Login owner → menu **Display** → **Daftarkan**.
 2. Masukkan nama perangkat → token unik muncul **sekali** (+ URL display).
-3. Buka URL pada TV/monitor/tablet di toko (contoh: `/display/dev-display-token`).
-4. Layar memuat data via token display, menyimpan cache lokal, dan sinkron tiap 60 detik.
-5. Bila produk tidak muat satu layar, display otomatis membagi menjadi beberapa halaman dan berganti tiap `DISPLAY_ROTATE_SECONDS` detik (ada indikator "Halaman x / y"). Rotasi berhenti saat search aktif.
+3. (Opsional) Klik **Atur Kategori** untuk memilih kategori yang tampil di perangkat tersebut. Default: semua kategori aktif.
+4. Buka URL pada TV/monitor/tablet di toko (contoh: `/display/dev-display-token`).
+5. Layar memuat data via token display, menyimpan cache lokal, dan sinkron tiap 60 detik.
+6. Bila produk tidak muat satu layar, display otomatis membagi menjadi beberapa halaman dan berganti tiap `DISPLAY_ROTATE_SECONDS` detik (ada indikator "Halaman x / y"). Rotasi berhenti saat search aktif.
 
 Revoke: nonaktifkan perangkat di menu Display; token tidak akan lagi diterima (HTTP 401).
 

@@ -8,6 +8,7 @@ import { Modal } from "@/components/ui/modal";
 import { Field, Input, Select } from "@/components/ui/input";
 import { ErrorMessage } from "@/components/ui/feedback";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { CheckIcon } from "@/components/ui/icons";
 
 export type ProductFormMode =
   | { type: "create" }
@@ -135,6 +136,7 @@ export function ProductFormModal({
             Batal
           </Button>
           <Button type="submit" form="product-form" loading={saving}>
+            <CheckIcon />
             Simpan
           </Button>
         </>

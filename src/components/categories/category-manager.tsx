@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Modal } from "@/components/ui/modal";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { CheckIcon, EditIcon, PlusIcon, PowerIcon, TrashIcon } from "@/components/ui/icons";
 import { Field, Input } from "@/components/ui/input";
 import { ErrorMessage, EmptyState, LoadingBlock } from "@/components/ui/feedback";
 
@@ -79,6 +80,7 @@ function CategoryFormModal({
             Batal
           </Button>
           <Button type="submit" form="category-form" loading={saving}>
+            <CheckIcon />
             Simpan
           </Button>
         </>
@@ -206,7 +208,10 @@ export function CategoryManager() {
             {categories.length} kategori
           </p>
         </div>
-        <Button onClick={() => setFormMode({ type: "create" })}>Tambah</Button>
+        <Button onClick={() => setFormMode({ type: "create" })}>
+          <PlusIcon />
+          Tambah
+        </Button>
       </div>
 
       {loading && <LoadingBlock />}
@@ -243,6 +248,7 @@ export function CategoryManager() {
                   className="px-3"
                   onClick={() => setFormMode({ type: "edit", category })}
                 >
+                  <EditIcon />
                   Edit
                 </Button>
                 <Button
@@ -251,6 +257,7 @@ export function CategoryManager() {
                   loading={togglingId === category.id}
                   onClick={() => toggle(category)}
                 >
+                  <PowerIcon />
                   {category.isActive ? "Nonaktifkan" : "Aktifkan"}
                 </Button>
                 <Button
@@ -261,6 +268,7 @@ export function CategoryManager() {
                     setDeleteTarget(category);
                   }}
                 >
+                  <TrashIcon />
                   Hapus
                 </Button>
               </div>

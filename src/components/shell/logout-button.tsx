@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { fetchJSON } from "@/lib/client/api";
+import { LogoutIcon } from "@/components/ui/icons";
 
 export function LogoutButton() {
   const router = useRouter();
@@ -24,8 +25,9 @@ export function LogoutButton() {
       type="button"
       onClick={onLogout}
       disabled={loading}
-      className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-50 disabled:opacity-50"
+      className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-50 disabled:opacity-50"
     >
+      <LogoutIcon />
       {loading ? "Keluar..." : "Keluar"}
     </button>
   );

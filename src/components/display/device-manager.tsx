@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Modal } from "@/components/ui/modal";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { CheckIcon, PlusIcon, PowerIcon, SlidersIcon, TrashIcon } from "@/components/ui/icons";
 import { Field, Input } from "@/components/ui/input";
 import { ErrorMessage, EmptyState, LoadingBlock } from "@/components/ui/feedback";
 
@@ -58,6 +59,7 @@ function RegisterModal({
             Batal
           </Button>
           <Button type="submit" form="register-form" loading={saving}>
+            <PlusIcon />
             Daftarkan
           </Button>
         </>
@@ -204,6 +206,7 @@ function CategorySelectionModal({
             Batal
           </Button>
           <Button type="button" onClick={onSubmit} loading={saving}>
+            <CheckIcon />
             Simpan
           </Button>
         </>
@@ -357,7 +360,10 @@ export function DisplayDeviceManager() {
             {devices.filter((d) => d.isActive).length} aktif
           </p>
         </div>
-        <Button onClick={() => setRegisterOpen(true)}>Daftarkan</Button>
+        <Button onClick={() => setRegisterOpen(true)}>
+          <PlusIcon />
+          Daftarkan
+        </Button>
       </div>
 
       <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
@@ -405,6 +411,7 @@ export function DisplayDeviceManager() {
                   className="whitespace-nowrap px-3"
                   onClick={() => setEditTarget(device)}
                 >
+                  <SlidersIcon />
                   Atur Kategori
                 </Button>
                 <Button
@@ -413,6 +420,7 @@ export function DisplayDeviceManager() {
                   loading={togglingId === device.id}
                   onClick={() => toggle(device)}
                 >
+                  <PowerIcon />
                   {device.isActive ? "Nonaktifkan" : "Aktifkan"}
                 </Button>
                 <Button
@@ -423,6 +431,7 @@ export function DisplayDeviceManager() {
                     setDeleteTarget(device);
                   }}
                 >
+                  <TrashIcon />
                   Hapus
                 </Button>
               </div>

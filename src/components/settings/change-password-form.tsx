@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { fetchJSON } from "@/lib/client/api";
 import { Button } from "@/components/ui/button";
+import { CheckIcon } from "@/components/ui/icons";
 import { Field, Input } from "@/components/ui/input";
 import { ErrorMessage } from "@/components/ui/feedback";
 
@@ -81,6 +82,7 @@ export function ChangePasswordForm() {
         />
       </Field>
       <Button type="submit" loading={saving}>
+        <CheckIcon />
         Simpan Perubahan
       </Button>
     </form>

@@ -9,6 +9,7 @@ import type { CategoryDto, ProductDto } from "@/lib/api-types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ErrorMessage, EmptyState, LoadingBlock } from "@/components/ui/feedback";
+import { CurrencyIcon, EditIcon, PlusIcon } from "@/components/ui/icons";
 import { PriceEditSheet } from "./price-edit-sheet";
 import { ProductFormModal, type ProductFormMode } from "./product-form-modal";
 
@@ -113,7 +114,10 @@ export function ProductList() {
             {products.length} produk · {categories.length} kategori
           </p>
         </div>
-        <Button onClick={() => setFormMode({ type: "create" })}>Tambah</Button>
+        <Button onClick={() => setFormMode({ type: "create" })}>
+          <PlusIcon />
+          Tambah
+        </Button>
       </div>
 
       <SearchInput value={query} onChange={setQuery} placeholder="Cari produk..." />
@@ -169,6 +173,7 @@ export function ProductList() {
                         setFormMode({ type: "edit", product })
                       }
                     >
+                      <EditIcon />
                       Edit
                     </Button>
                     <Button
@@ -176,6 +181,7 @@ export function ProductList() {
                       className="px-3"
                       onClick={() => setPriceTarget(product)}
                     >
+                      <CurrencyIcon />
                       Ubah Harga
                     </Button>
                   </div>

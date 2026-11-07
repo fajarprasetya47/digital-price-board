@@ -17,23 +17,23 @@ Dokumentasi lengkap:
 
 **Login owner**
 
-![Login owner](public/screenshot/1-login.png)
+![Login owner](public/screenshot/1-signin.png)
 
 **Daftar produk (dikelompokkan per kategori)**
 
-![Daftar produk](public/screenshot/2-produk.png)
+![Daftar produk](public/screenshot/2-products.png)
 
 **Kelola kategori**
 
-![Kelola kategori](public/screenshot/3-category.png)
+![Kelola kategori](public/screenshot/3-category-product.png)
 
 **Perangkat display (owner)**
 
-![Perangkat display](public/screenshot/4-display.png)
+![Perangkat display](public/screenshot/4-display-devices.png)
 
 **Tampilan display di toko (dengan pagination)**
 
-![Tampilan display](public/screenshot/5-overview-display.png)
+![Tampilan display](public/screenshot/5-overview.png)
 
 ---
 
